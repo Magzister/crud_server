@@ -59,8 +59,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
+        errors_dict = {}
+
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            errors_dict["password2"] = "Password fields didn't match."
+        if not attrs['first_name']:
+            errors_dict["first_name"] = "This field may not be blank."
+        if not attrs['last_name']:
+            errors_dict["last_name"] = "This field may not be blank."
+
+        if errors_dict:
+            raise serializers.ValidationError(errors_dict)
 
         return attrs
 
