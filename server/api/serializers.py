@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Object
 from .models import QRCode
+from .models import AccessOffer
+from .models import Access
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
@@ -8,26 +10,41 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 
 
+class UserSerializer(serializers.ModelSerializer):
+    user_objects = serializers.PrimaryKeyRelatedField(many=True, queryset=Object.objects.all())
+
+    class Meta:
+        model = get_user_model()
+        fields = ('id', 'username', 'first_name', 'last_name', 'user_objects')
+
+
 class ObjectSerializer(serializers.ModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.username')
+    owner = UserSerializer(read_only=True)
 
     class Meta:
         model = Object
         fields = ['id', 'name', 'owner', 'description']
 
 
+class AccessSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    object = ObjectSerializer(read_only=True)
+
+    class Meta:
+        model = Access
+        fields = ['user', 'object']
+
+
+class AccessOfferSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccessOffer
+        fields = ['user', 'owner', 'object']
+
+
 class QRCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = QRCode
         fields = ['id', 'object', 'code', 'status']
-
-
-class UserSerializer(serializers.ModelSerializer):
-    user_objects = serializers.PrimaryKeyRelatedField(many=True, queryset=Object.objects.all())
-
-    class Meta:
-        model = get_user_model()
-        fields = ('id', 'username', 'user_objects')
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
