@@ -18,9 +18,9 @@ class Access(models.Model):
 
 
 class AccessOffer(models.Model):
-    user = models.ForeignKey(User, related_name='user_access_requests', on_delete=models.CASCADE)
-    owner = models.ForeignKey(User, related_name='owner_access_requests', on_delete=models.CASCADE)
-    object = models.ForeignKey(Object, related_name='object_access_requests', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='user_access_offers', on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, related_name='owner_access_offers', on_delete=models.CASCADE)
+    object = models.ForeignKey(Object, related_name='object_access_offers', on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (('user', 'owner', 'object'),)

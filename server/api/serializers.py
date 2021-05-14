@@ -11,11 +11,10 @@ from django.contrib.auth import get_user_model
 
 
 class UserSerializer(serializers.ModelSerializer):
-    user_objects = serializers.PrimaryKeyRelatedField(many=True, queryset=Object.objects.all())
 
     class Meta:
         model = get_user_model()
-        fields = ('id', 'username', 'first_name', 'last_name', 'user_objects')
+        fields = ('id', 'username', 'first_name', 'last_name')
 
 
 class ObjectSerializer(serializers.ModelSerializer):
@@ -36,9 +35,13 @@ class AccessSerializer(serializers.ModelSerializer):
 
 
 class AccessOfferSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    object = ObjectSerializer(read_only=True)
+    owner = UserSerializer(read_only=True)
+
     class Meta:
         model = AccessOffer
-        fields = ['user', 'owner', 'object']
+        fields = ['id', 'user', 'owner', 'object']
 
 
 class QRCodeSerializer(serializers.ModelSerializer):
