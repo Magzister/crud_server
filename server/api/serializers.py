@@ -28,10 +28,11 @@ class ObjectSerializer(serializers.ModelSerializer):
 class AccessSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     object = ObjectSerializer(read_only=True)
+    owner = UserSerializer(read_only=True)
 
     class Meta:
         model = Access
-        fields = ['user', 'object']
+        fields = ['user', 'object', 'owner']
 
 
 class AccessOfferSerializer(serializers.ModelSerializer):
@@ -47,7 +48,7 @@ class AccessOfferSerializer(serializers.ModelSerializer):
 class QRCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = QRCode
-        fields = ['id', 'object', 'code', 'status']
+        fields = ['id', 'object', 'code', 'user', 'created']
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -17,6 +17,15 @@ from .serializers import AccessSerializer
 from .serializers import AccessOfferSerializer
 from rest_framework.views import APIView
 from rest_framework import status
+from rest_framework.decorators import api_view
+from django.db.models import Q
+from .models import QRCode
+from .serializers import QRCodeSerializer
+from django.utils.timezone import utc
+
+import json
+import datetime
+import hashlib
 
 
 class AccessList(generics.DestroyAPIView):
@@ -142,3 +151,70 @@ class Invite(APIView):
             "detail": "You do not have permission to perform this action."
         }
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserAccessList(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        accesses = Access.objects.filter(user=self.request.user)
+        serializer = AccessSerializer(accesses, many=True)
+        return Response(serializer.data)
+
+
+@api_view(['GET'])
+def get_access_key(request, object_pk):
+    user = request.user
+    if bool(user and user.is_authenticated):
+        object = Object.objects.get(pk=object_pk)
+        is_owner = (object.owner == user)
+        access = Access.objects.filter(Q(user=user) & Q(object=object))
+        if len(access) > 1:
+            serializer = AccessSerializer(access, many=True)
+            return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
+        is_have_access = bool(access)
+        if is_owner or is_have_access:
+            hash = hashlib.sha256()
+            time = datetime.datetime.now().strftime('%m%d%Y%H%M%S')
+            hash_str = bytes(time, 'utf-8') + bytes(user.username, 'utf-8') + bytes(object.name, 'utf-8')
+            hash.update(hash_str)
+            code = hash.hexdigest()
+            data = {
+                "code": code
+            }
+            qr_code = QRCode(
+                user=user,
+                object=object,
+                code=code
+            )
+            qr_code.save()
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            data = {
+                "detail": "You do not have permission to perform this action."
+            }
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        data = {
+            "detail": "You do not have permission to perform this action."
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_access_with_key(request, object_pk):
+    body_unicode = request.body.decode('utf-8')
+    data = json.loads(body_unicode)
+    code = data['code']
+    object = Object.objects.get(pk=object_pk)
+    qr_code = QRCode.objects.filter(Q(code=code) & Q(object=object))
+    if len(qr_code) > 1:
+        serializer = QRCodeSerializer(qr_code, many=True)
+        return Response(serializer.data, status=status.HTTP_501_NOT_IMPLEMENTED)
+    if not qr_code:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    now = datetime.datetime.utcnow().replace(tzinfo=utc)
+    created = qr_code[0].created
+    if (now - created).total_seconds() > 60:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_200_OK)

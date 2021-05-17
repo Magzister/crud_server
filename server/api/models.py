@@ -27,6 +27,7 @@ class AccessOffer(models.Model):
 
 
 class QRCode(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     object = models.ForeignKey(Object, on_delete=models.DO_NOTHING)
-    code = models.CharField(max_length=20)
-    status = models.BooleanField()
+    code = models.CharField(max_length=64)
+    created = models.DateTimeField(auto_now=True)
